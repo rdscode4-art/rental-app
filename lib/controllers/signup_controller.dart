@@ -6,6 +6,10 @@ import '../screens/main_navigation.dart';
 import '../utils/app_theme.dart';
 
 class SignupController extends GetxController {
+  final String phoneNumber;
+  
+  SignupController({required this.phoneNumber});
+  
   final nameController = TextEditingController();
   final mobileController = TextEditingController();
   final emailController = TextEditingController();
@@ -32,6 +36,13 @@ class SignupController extends GetxController {
     'Manali',
     'Kerala',
   ];
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Pre-fill mobile number
+    mobileController.text = phoneNumber;
+  }
 
   Future<void> pickProfileImage() async {
     final source = await Get.dialog<ImageSource>(
@@ -62,7 +73,7 @@ class SignupController extends GetxController {
             ),
           ],
         ),
-      ),
+      ), 
     );
     
     if (source == null) return;

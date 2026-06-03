@@ -6,7 +6,7 @@ import '../utils/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/custom_text_field.dart';
-import 'signup_screen.dart';
+import 'phone_verification_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -281,7 +281,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          Get.to(() => const SignupScreen());
+                          Get.to(() => const PhoneVerificationScreen());
                         },
                         child: Text(
                           'Sign Up',

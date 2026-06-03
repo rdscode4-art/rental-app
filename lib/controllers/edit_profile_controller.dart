@@ -15,6 +15,13 @@ class EditProfileController extends GetxController {
   
   Rx<File?> profileImage = Rx<File?>(null);
   RxBool isLoading = false.obs;
+  RxString selectedCity = 'Goa'.obs;
+List<String> cities = ['Goa', 'Delhi', 'Mumbai', 'Bangalore'];
+
+void changeCity(String? city) {
+  if (city != null) selectedCity.value = city;
+}
+
 
   Future<void> pickProfileImage() async {
     try {

@@ -5,9 +5,14 @@ import '../utils/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../controllers/booking_controller.dart';
 
-class BookingsScreen extends StatelessWidget {
+class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
 
+  @override
+  State<BookingsScreen> createState() => _BookingsScreenState();
+}
+
+class _BookingsScreenState extends State<BookingsScreen> {
   @override
   Widget build(BuildContext context) {
     final BookingController controller = Get.put(BookingController());
@@ -54,19 +59,6 @@ class BookingsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        shape: BoxShape.circle,
-                        boxShadow: AppTheme.glowShadow,
-                      ),
-                      child: const Icon(
-                        Icons.search_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -79,20 +71,20 @@ class BookingsScreen extends StatelessWidget {
                   color: AppTheme.cardColor,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Obx(() => Row(
-                  children: [
-                    _buildTab('Upcoming', 0, controller),
-                    _buildTab('Active', 1, controller),
-                    _buildTab('Completed', 2, controller),
-                    _buildTab('Cancelled', 3, controller),
-                  ],
-                )),
+                child: Obx(
+                  () => Row(
+                    children: [
+                      _buildTab('Upcoming', 0, controller),
+                      _buildTab('Active', 1, controller),
+                      _buildTab('Completed', 2, controller),
+                      _buildTab('Cancelled', 3, controller),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               // Content
-              Expanded(
-                child: Obx(() => _buildBookingList(controller)),
-              ),
+              Expanded(child: Obx(() => _buildBookingList(controller))),
             ],
           ),
         ),

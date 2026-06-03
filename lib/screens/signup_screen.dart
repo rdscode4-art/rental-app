@@ -8,12 +8,23 @@ import '../widgets/gradient_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../controllers/signup_controller.dart';
 
-class SignupScreen extends StatelessWidget {
-  const SignupScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  final String phoneNumber;
+  final String token;
+  
+  const SignupScreen({super.key, required this.phoneNumber, required this.token});
 
   @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  @override
   Widget build(BuildContext context) {
-    final SignupController controller = Get.put(SignupController());
+    final SignupController controller = Get.put(SignupController(
+      phoneNumber: widget.phoneNumber,
+      token: widget.token,
+    ));
 
     return Scaffold(
       body: Container(
@@ -137,10 +148,15 @@ class SignupScreen extends StatelessWidget {
                       const SizedBox(height: 20),
                       CustomTextField(
                         controller: controller.mobileController,
-                        label: 'Mobile Number',
-                        hint: 'Enter your mobile number',
+                        label: 'Mobile Number (Verified)',
+                        hint: 'Verified mobile number',
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
+                        enabled: false,
+                        suffixIcon: const Icon(
+                          Icons.verified,
+                          color: AppTheme.successGreen,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(

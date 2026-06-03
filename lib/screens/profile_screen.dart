@@ -176,12 +176,12 @@ class ProfileScreen extends StatelessWidget {
                   controller.viewDocuments,
                 ),
                 const SizedBox(height: 12),
-                _buildMenuOption(
-                  Icons.notifications_outlined,
-                  'Notifications',
-                  'Manage notification preferences',
-                  controller.manageNotifications,
-                ),
+                // _buildMenuOption(
+                //   Icons.notifications_outlined,
+                //   'Notifications',
+                //   'Manage notification preferences',
+                //   controller.manageNotifications,
+                // ),
                 const SizedBox(height: 12),
                 _buildMenuOption(
                   Icons.help_outline_rounded,

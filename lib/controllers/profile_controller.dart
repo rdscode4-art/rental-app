@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:rentalvender/screens/edit_profile_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/documents_screen.dart';
 
@@ -10,44 +11,42 @@ class ProfileController extends GetxController {
   RxString email = 'vendor@rideal.com'.obs;
   RxString city = 'Goa, India'.obs;
   RxBool isVerified = true.obs;
-  
+
   RxInt totalVehicles = 12.obs;
   RxInt totalBookings = 248.obs;
   RxDouble rating = 4.8.obs;
 
   void editProfile() {
-    Get.snackbar(
-      "Info",
-      "Edit profile feature coming soon",
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    Get.to(() => EditProfileScreen());
   }
 
   void viewDocuments() {
     Get.to(() => const DocumentsScreen());
   }
 
-  void manageNotifications() {
-    Get.snackbar(
-      "Info",
-      "Notification settings coming soon",
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
+  // void manageNotifications() {
+  //   Get.snackbar(
+  //     "Info",
+  //     "Notification settings coming soon",
+  //     snackPosition: SnackPosition.BOTTOM,
+  //   );
+  // }
 
-  void privacySettings() {
-    Get.snackbar(
-      "Info",
-      "Privacy settings coming soon",
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
+  // void privacySettings() {
+  //   Get.snackbar(
+  //     "Info",
+  //     "Privacy settings coming soon",
+  //     snackPosition: SnackPosition.BOTTOM,
+  //   );
+  // }
 
   void helpSupport() {
-    Get.snackbar(
-      "Info",
-      "Help & Support coming soon",
-      snackPosition: SnackPosition.BOTTOM,
+    Get.defaultDialog(
+      title: "Help & Support",
+      middleText:
+          "For assistance, contact us:\n\n📧 support@rideal.com\n📞 +91 98765 43210",
+      textConfirm: "OK",
+      onConfirm: () => Get.back(),
     );
   }
 

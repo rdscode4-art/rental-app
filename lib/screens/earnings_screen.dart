@@ -55,19 +55,7 @@ class EarningsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        shape: BoxShape.circle,
-                        boxShadow: AppTheme.glowShadow,
-                      ),
-                      child: const Icon(
-                        Icons.download_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
+                  
                   ],
                 ),
                 const SizedBox(height: 30),
