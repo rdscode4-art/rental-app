@@ -40,14 +40,6 @@ class DashboardScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          controller.greeting.value,
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: AppTheme.greyText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
                           controller.vendorName.value,
                           style: GoogleFonts.poppins(
                             fontSize: 28,
@@ -55,7 +47,7 @@ class DashboardScreen extends StatelessWidget {
                             color: AppTheme.whiteText,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             const Icon(

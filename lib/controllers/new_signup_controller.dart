@@ -1,18 +1,49 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../screens/main_navigation.dart';
+import '../screens/login_screen.dart';
 import '../utils/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class NewSignupController extends GetxController {
-  final String phoneNumber;
-  final String token;
-  
-  NewSignupController({required this.phoneNumber, required this.token});
-  
+  // Get token and phone from storage
+  late String token;
+  late String phoneNumber;
+
+  @override
+  void onInit() {
+    super.onInit();
+
+    // Retrieve from storage
+    token = StorageService.getToken() ?? '';
+    phoneNumber = StorageService.getPhoneNumber() ?? '';
+
+    print('═══════════════════════════════════');
+    print('🔓 SIGNUP CONTROLLER INITIALIZED');
+    print('═══════════════════════════════════');
+    print('📱 Phone: $phoneNumber');
+    print(
+      '🔑 Token: ${token.isNotEmpty ? "${token.substring(0, 30)}..." : "NOT FOUND"}',
+    );
+    print('Token Length: ${token.length}');
+    print('═══════════════════════════════════');
+
+    if (token.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Session expired. Please login again.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+      );
+      Get.back();
+    }
+  }
+
   // Controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -25,7 +56,7 @@ class NewSignupController extends GetxController {
   final cityController = TextEditingController();
   final stateController = TextEditingController();
   final pincodeController = TextEditingController();
-  
+
   // Observable variables
   RxBool isPasswordVisible = false.obs;
   RxBool isLoading = false.obs;
@@ -33,7 +64,7 @@ class NewSignupController extends GetxController {
   Rx<File?> aadharFrontImage = Rx<File?>(null);
   Rx<File?> aadharBackImage = Rx<File?>(null);
   Rx<File?> panCardImage = Rx<File?>(null);
-  
+
   final ImagePicker _picker = ImagePicker();
 
   void togglePasswordVisibility() {
@@ -52,7 +83,10 @@ class NewSignupController extends GetxController {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryPurple),
+              leading: const Icon(
+                Icons.camera_alt,
+                color: AppTheme.primaryPurple,
+              ),
               title: const Text(
                 'Camera',
                 style: TextStyle(color: AppTheme.whiteText),
@@ -60,7 +94,10 @@ class NewSignupController extends GetxController {
               onTap: () => Get.back(result: ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppTheme.primaryPurple),
+              leading: const Icon(
+                Icons.photo_library,
+                color: AppTheme.primaryPurple,
+              ),
               title: const Text(
                 'Gallery',
                 style: TextStyle(color: AppTheme.whiteText),
@@ -71,9 +108,9 @@ class NewSignupController extends GetxController {
         ),
       ),
     );
-    
+
     if (source == null) return;
-    
+
     final XFile? image = await _picker.pickImage(
       source: source,
       imageQuality: 70,
@@ -89,121 +126,228 @@ class NewSignupController extends GetxController {
   Future<void> pickAadharBackImage() async => _pickImage(aadharBackImage);
   Future<void> pickPanCardImage() async => _pickImage(panCardImage);
 
+  Future<Position?> _verifyCurrentLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      Get.snackbar(
+        "Error",
+        "Please enable location services to complete signup",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return null;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied) {
+      Get.snackbar(
+        "Error",
+        "Location permission is required to verify your address",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return null;
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      Get.snackbar(
+        "Error",
+        "Please allow location permission from app settings",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      await Geolocator.openAppSettings();
+      return null;
+    }
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+    } catch (e) {
+      print('❌ Location verification failed: $e');
+      Get.snackbar(
+        "Error",
+        "Unable to verify current location. Please try again.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return null;
+    }
+  }
+
   bool _validateFields() {
     if (nameController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter your full name",
+      Get.snackbar(
+        "Error",
+        "Please enter your full name",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
-    if (emailController.text.trim().isEmpty || !GetUtils.isEmail(emailController.text.trim())) {
-      Get.snackbar("Error", "Please enter a valid email",
+    if (emailController.text.trim().isEmpty ||
+        !GetUtils.isEmail(emailController.text.trim())) {
+      Get.snackbar(
+        "Error",
+        "Please enter a valid email",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
-    if (passwordController.text.trim().isEmpty || passwordController.text.length < 6) {
-      Get.snackbar("Error", "Password must be at least 6 characters",
+    if (passwordController.text.trim().isEmpty ||
+        passwordController.text.length < 6) {
+      Get.snackbar(
+        "Error",
+        "Password must be at least 6 characters",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (streetController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter street address",
+      Get.snackbar(
+        "Error",
+        "Please enter street address",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (areaController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter area",
+      Get.snackbar(
+        "Error",
+        "Please enter area",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (cityController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter city",
+      Get.snackbar(
+        "Error",
+        "Please enter city",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (stateController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter state",
+      Get.snackbar(
+        "Error",
+        "Please enter state",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
-    if (pincodeController.text.trim().isEmpty || pincodeController.text.length != 6) {
-      Get.snackbar("Error", "Please enter valid 6-digit pincode",
+    if (pincodeController.text.trim().isEmpty ||
+        pincodeController.text.length != 6) {
+      Get.snackbar(
+        "Error",
+        "Please enter valid 6-digit pincode",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (aadharNumberController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter Aadhar number",
+      Get.snackbar(
+        "Error",
+        "Please enter Aadhar number",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (aadharFrontImage.value == null) {
-      Get.snackbar("Error", "Please upload Aadhar front image",
+      Get.snackbar(
+        "Error",
+        "Please upload Aadhar front image",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (aadharBackImage.value == null) {
-      Get.snackbar("Error", "Please upload Aadhar back image",
+      Get.snackbar(
+        "Error",
+        "Please upload Aadhar back image",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
-    if (panNumberController.text.trim().isEmpty || panNumberController.text.length != 10) {
-      Get.snackbar("Error", "Please enter valid 10-character PAN number",
+    if (panNumberController.text.trim().isEmpty ||
+        panNumberController.text.length != 10) {
+      Get.snackbar(
+        "Error",
+        "Please enter valid 10-character PAN number",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
     if (panCardImage.value == null) {
-      Get.snackbar("Error", "Please upload PAN card image",
+      Get.snackbar(
+        "Error",
+        "Please upload PAN card image",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorRed,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2));
+        duration: const Duration(seconds: 2),
+      );
       return false;
     }
 
@@ -216,12 +360,20 @@ class NewSignupController extends GetxController {
     isLoading.value = true;
 
     try {
+      final position = await _verifyCurrentLocation();
+      if (position == null) {
+        isLoading.value = false;
+        return;
+      }
+
       final result = await ApiService.completeProfile(
         token: token,
         name: nameController.text.trim(),
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
-        agencyName: agencyController.text.trim().isNotEmpty ? agencyController.text.trim() : null,
+        agencyName: agencyController.text.trim().isNotEmpty
+            ? agencyController.text.trim()
+            : null,
         aadharNumber: aadharNumberController.text.trim(),
         address: {
           'street': streetController.text.trim(),
@@ -230,6 +382,8 @@ class NewSignupController extends GetxController {
           'state': stateController.text.trim(),
           'pincode': pincodeController.text.trim(),
         },
+        lat: position.latitude.toString(),
+        lng: position.longitude.toString(),
         profilePhoto: profileImage.value,
         aadharFront: aadharFrontImage.value,
         aadharBack: aadharBackImage.value,
@@ -242,7 +396,7 @@ class NewSignupController extends GetxController {
       // Check for 401 Unauthorized (Token expired/invalid)
       if (result['statusCode'] == 401) {
         print('🔴 TOKEN ERROR: Token is invalid or expired');
-        
+
         Get.dialog(
           AlertDialog(
             backgroundColor: AppTheme.cardColor,
@@ -251,7 +405,11 @@ class NewSignupController extends GetxController {
             ),
             title: Row(
               children: [
-                const Icon(Icons.lock_clock, color: AppTheme.warningOrange, size: 28),
+                const Icon(
+                  Icons.lock_clock,
+                  color: AppTheme.warningOrange,
+                  size: 28,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   'Session Expired',
@@ -278,7 +436,10 @@ class NewSignupController extends GetxController {
                   Get.back(); // Go back to verification
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     gradient: AppTheme.primaryGradient,
                     borderRadius: BorderRadius.circular(12),
@@ -299,45 +460,117 @@ class NewSignupController extends GetxController {
       }
 
       if (result['success']) {
+        // Clear token after successful signup
+        StorageService.clearToken();
+
         Get.snackbar(
           "Success",
           result['data']['message'] ?? "Profile completed successfully!",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppTheme.successGreen,
           colorText: Colors.white,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
         );
 
-        // Navigate to main screen
-        Get.offAll(
-          () => const MainNavigation(),
-          transition: Transition.fadeIn,
-          duration: const Duration(milliseconds: 300),
+        // Navigate to login screen with success message
+        Get.dialog(
+          AlertDialog(
+            backgroundColor: AppTheme.cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Registration Complete!',
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.whiteText,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Your account has been created successfully. Please login to continue.',
+              style: GoogleFonts.poppins(
+                color: AppTheme.greyText,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Get.back(); // Close dialog
+                  // Navigate to login screen and clear all previous routes
+                  Get.offAll(
+                    () => const LoginScreen(),
+                    transition: Transition.fadeIn,
+                    duration: const Duration(milliseconds: 300),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Go to Login',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          barrierDismissible: false,
         );
       } else {
         // Handle field-specific errors
         final responseData = result['data'];
         String errorMessage = '';
-        
+
         print('═══════════════════════════════════');
         print('🔴 COMPLETE ERROR RESPONSE:');
         print('Response Data: $responseData');
         print('Status Code: ${result['statusCode']}');
         print('═══════════════════════════════════');
-        
+
         // Check for validation errors
         if (responseData['errors'] != null) {
           final errors = responseData['errors'];
           print('🔴 Validation Errors Found: $errors');
           print('🔴 Errors Type: ${errors.runtimeType}');
-          
+
           // Create detailed error message
           if (errors is Map) {
             errors.forEach((field, messages) {
               print('  Field: $field');
               print('  Messages: $messages');
               print('  Messages Type: ${messages.runtimeType}');
-              
+
               if (messages is List) {
                 for (var msg in messages) {
                   errorMessage += '• $msg\n';
@@ -352,24 +585,26 @@ class NewSignupController extends GetxController {
             errorMessage = errors;
           }
         }
-        
+
         // Check for error field (some APIs use 'error' instead of 'errors')
         if (responseData['error'] != null && errorMessage.isEmpty) {
           print('🔴 Single Error Found: ${responseData['error']}');
           errorMessage = responseData['error'].toString();
         }
-        
+
         // If no specific errors, use generic message
         if (errorMessage.isEmpty) {
-          errorMessage = responseData['message'] ?? "Failed to complete profile. Please try again.";
+          errorMessage =
+              responseData['message'] ??
+              "Failed to complete profile. Please try again.";
           print('🔴 Using Generic Error Message: $errorMessage');
         }
-        
+
         print('═══════════════════════════════════');
         print('🔴 Final Error Message to Display:');
         print(errorMessage);
         print('═══════════════════════════════════');
-        
+
         // Show error dialog with details
         Get.dialog(
           AlertDialog(
@@ -379,7 +614,11 @@ class NewSignupController extends GetxController {
             ),
             title: Row(
               children: [
-                const Icon(Icons.error_outline, color: AppTheme.errorRed, size: 28),
+                const Icon(
+                  Icons.error_outline,
+                  color: AppTheme.errorRed,
+                  size: 28,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   'Validation Error',
@@ -416,7 +655,11 @@ class NewSignupController extends GetxController {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, color: AppTheme.errorRed, size: 20),
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppTheme.errorRed,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -437,7 +680,10 @@ class NewSignupController extends GetxController {
               TextButton(
                 onPressed: () => Get.back(),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     gradient: AppTheme.primaryGradient,
                     borderRadius: BorderRadius.circular(12),

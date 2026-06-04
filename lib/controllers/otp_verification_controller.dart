@@ -4,6 +4,7 @@ import 'dart:async';
 import '../screens/new_signup_screen.dart';
 import '../utils/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class OtpVerificationController extends GetxController {
   final String phoneNumber;
@@ -79,7 +80,9 @@ class OtpVerificationController extends GetxController {
       String token = '';
       
       // Try different token field names
-      if (responseData['token'] != null) {
+      if (responseData['tempToken'] != null) {
+        token = responseData['tempToken'];
+      } else if (responseData['token'] != null) {
         token = responseData['token'];
       } else if (responseData['accessToken'] != null) {
         token = responseData['accessToken'];
@@ -87,6 +90,8 @@ class OtpVerificationController extends GetxController {
         token = responseData['data']['token'];
       } else if (responseData['data'] != null && responseData['data']['accessToken'] != null) {
         token = responseData['data']['accessToken'];
+      } else if (responseData['data'] != null && responseData['data']['tempToken'] != null) {
+        token = responseData['data']['tempToken'];
       }
       
       print('═══════════════════════════════════');
@@ -110,6 +115,10 @@ class OtpVerificationController extends GetxController {
         return;
       }
       
+      // Save token and phone number to storage
+      StorageService.saveToken(token);
+      StorageService.savePhoneNumber(phoneNumber);
+      
       Get.snackbar(
         "Success",
         result['data']['message'] ?? "OTP verified successfully!",
@@ -119,9 +128,9 @@ class OtpVerificationController extends GetxController {
         duration: const Duration(seconds: 2),
       );
 
-      // Navigate to signup screen with token
+      // Navigate to signup screen
       Get.off(
-        () => NewSignupScreen(phoneNumber: phoneNumber, token: token),
+        () => const NewSignupScreen(),
         transition: Transition.rightToLeft,
         duration: const Duration(milliseconds: 300),
       );

@@ -3,25 +3,103 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../utils/app_theme.dart';
+import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class EditProfileController extends GetxController {
   final ImagePicker _picker = ImagePicker();
   
-  final nameController = TextEditingController(text: 'Alex Morgan');
-  final agencyController = TextEditingController(text: 'Goa Rentals');
-  final mobileController = TextEditingController(text: '+91 98765 43210');
-  final emailController = TextEditingController(text: 'vendor@rideal.com');
-  final cityController = TextEditingController(text: 'Goa');
+  final nameController = TextEditingController();
+  final agencyController = TextEditingController();
+  final mobileController = TextEditingController();
+  final emailController = TextEditingController();
+  final cityController = TextEditingController();
   
   Rx<File?> profileImage = Rx<File?>(null);
+  RxString profilePhotoUrl = ''.obs;
   RxBool isLoading = false.obs;
-  RxString selectedCity = 'Goa'.obs;
-List<String> cities = ['Goa', 'Delhi', 'Mumbai', 'Bangalore'];
 
-void changeCity(String? city) {
-  if (city != null) selectedCity.value = city;
-}
+  @override
+  void onInit() {
+    super.onInit();
+    loadProfile();
+  }
 
+  Future<void> loadProfile() async {
+    isLoading.value = true;
+
+    final token = StorageService.getToken();
+    
+    if (token == null || token.isEmpty) {
+      isLoading.value = false;
+      Get.snackbar(
+        "Error",
+        "Please login again",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final result = await ApiService.getProfile(token);
+
+    isLoading.value = false;
+
+    if (result['success']) {
+      // Extract profile data
+      Map<String, dynamic> data = {};
+      
+      if (result['data']['data'] != null) {
+        data = result['data']['data'];
+      } else if (result['data']['owner'] != null) {
+        data = result['data']['owner'];
+      } else if (result['data']['user'] != null) {
+        data = result['data']['user'];
+      } else {
+        data = result['data'];
+      }
+      
+      // Populate fields
+      nameController.text = data['name']?.toString() ?? '';
+      agencyController.text = data['agencyName']?.toString() ?? '';
+      mobileController.text = data['phone']?.toString() ?? '';
+      emailController.text = data['email']?.toString() ?? '';
+      
+      // Check multiple possible field names for profile photo
+      String photoPath = data['profilePhoto']?.toString() ?? 
+                         data['profilePicture']?.toString() ?? 
+                         data['avatar']?.toString() ?? 
+                         data['photo']?.toString() ?? 
+                         data['image']?.toString() ?? '';
+      
+      // Convert relative path to full URL
+      if (photoPath.isNotEmpty && !photoPath.startsWith('http')) {
+        profilePhotoUrl.value = 'https://backend.ridealmobility.com$photoPath';
+      } else {
+        profilePhotoUrl.value = photoPath;
+      }
+      
+      print('📸 Edit Profile - Photo URL: ${profilePhotoUrl.value}');
+      print('📸 Edit Profile - Is URL Empty: ${profilePhotoUrl.value.isEmpty}');
+      
+      // Address
+      if (data['address'] != null) {
+        final address = data['address'];
+        cityController.text = address['city']?.toString() ?? '';
+      }
+      
+      print('✅ Profile loaded in edit screen');
+    } else {
+      Get.snackbar(
+        "Error",
+        result['data']['message'] ?? "Failed to load profile",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+      );
+    }
+  }
 
   Future<void> pickProfileImage() async {
     try {

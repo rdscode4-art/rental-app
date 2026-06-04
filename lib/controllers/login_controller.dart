@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:rentalvender/screens/main_navigation.dart';
 import '../utils/app_theme.dart';
+import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class LoginController extends GetxController {
   final emailController = TextEditingController(text: 'vendor@rideal.com');
@@ -19,33 +21,94 @@ class LoginController extends GetxController {
   }
 
   void login() async {
-    // Set loading
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    
+    // Validation
+    if (email.isEmpty || !GetUtils.isEmail(email)) {
+      Get.snackbar(
+        "Error",
+        "Please enter a valid email",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Please enter password",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
     isLoading.value = true;
-    
-    // Simulate API call with minimal delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Reset loading
+
+    // Call API
+    final result = await ApiService.login(email, password);
+
     isLoading.value = false;
-    
-    // Fast navigation
-    Get.offAll(
-      () => const MainNavigation(),
-      transition: Transition.fadeIn,
-      duration: const Duration(milliseconds: 300),
-    );
-    
-    // Show success message
-    Get.snackbar(
-      "Success",
-      "Welcome back!",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppTheme.successGreen,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+
+    if (result['success']) {
+      final responseData = result['data'];
+      
+      // Extract token
+      String token = '';
+      if (responseData['token'] != null) {
+        token = responseData['token'];
+      } else if (responseData['accessToken'] != null) {
+        token = responseData['accessToken'];
+      } else if (responseData['data'] != null && responseData['data']['token'] != null) {
+        token = responseData['data']['token'];
+      }
+      
+      print('═══════════════════════════════════');
+      print('✅ LOGIN SUCCESSFUL');
+      print('🔑 Token: ${token.isNotEmpty ? "${token.substring(0, 30)}..." : "NOT FOUND"}');
+      print('═══════════════════════════════════');
+      
+      // Save token to storage
+      if (token.isNotEmpty) {
+        StorageService.saveToken(token);
+      }
+      
+      // Save user data if available
+      if (responseData['user'] != null || responseData['data'] != null) {
+        StorageService.saveUserData(responseData['user'] ?? responseData['data'] ?? {});
+      }
+      
+      Get.snackbar(
+        "Success",
+        responseData['message'] ?? "Welcome back!",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.successGreen,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+
+      // Navigate to main screen
+      Get.offAll(
+        () => const MainNavigation(),
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 300),
+      );
+    } else {
+      Get.snackbar(
+        "Error",
+        result['data']['message'] ?? "Invalid credentials. Please try again.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
   }
 
   void signInWithGoogle() async {

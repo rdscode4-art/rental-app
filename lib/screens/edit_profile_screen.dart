@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:rentalvender/controllers/edit_profile_controller.dart';
-import 'dart:io';
 import '../utils/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/custom_text_field.dart';
-import '../controllers/signup_controller.dart';
-
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -104,11 +101,35 @@ class _EditProfileScreen extends State<EditProfileScreen> {
                                       height: 100,
                                     ),
                                   )
-                                : const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: AppTheme.greyText,
-                                  ),
+                                : controller.profilePhotoUrl.value.isNotEmpty
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          controller.profilePhotoUrl.value,
+                                          fit: BoxFit.cover,
+                                          width: 100,
+                                          height: 100,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.person,
+                                              size: 50,
+                                              color: AppTheme.greyText,
+                                            );
+                                          },
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return const Center(
+                                              child: CircularProgressIndicator(
+                                                color: AppTheme.primaryPurple,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: AppTheme.greyText,
+                                      ),
                           ),
                           Positioned(
                             bottom: 0,
@@ -167,59 +188,12 @@ class _EditProfileScreen extends State<EditProfileScreen> {
                         prefixIcon: Icons.business_outlined,
                       ),
                       const SizedBox(height: 20),
-                      // City Dropdown
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'City',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.whiteText,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Obx(
-                            () => Container(
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceColor.withOpacity(0.5),
-                                borderRadius: AppTheme.inputRadius,
-                                border: Border.all(
-                                  color: AppTheme.greyText.withOpacity(0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: DropdownButtonFormField<String>(
-                                value: controller.selectedCity.value,
-                                dropdownColor: AppTheme.cardColor,
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(
-                                    Icons.location_city_outlined,
-                                    color: AppTheme.greyText,
-                                    size: 22,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                ),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 15,
-                                  color: AppTheme.whiteText,
-                                ),
-                                items: controller.cities.map((city) {
-                                  return DropdownMenuItem(
-                                    value: city,
-                                    child: Text(city),
-                                  );
-                                }).toList(),
-                                onChanged: controller.changeCity,
-                              ),
-                            ),
-                          ),
-                        ],
+                      // City Field
+                      CustomTextField(
+                        controller: controller.cityController,
+                        label: 'City',
+                        hint: 'Enter your city',
+                        prefixIcon: Icons.location_city_outlined,
                       ),
                       const SizedBox(height: 30),
                       // Register Button

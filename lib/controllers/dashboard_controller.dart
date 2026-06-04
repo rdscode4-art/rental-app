@@ -1,17 +1,18 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
+import '../services/storage_service.dart';
+import '../services/api_service.dart';
 
 class DashboardController extends GetxController {
-  RxString vendorName = 'Alex Morgan'.obs;
+  RxString vendorName = 'Loading...'.obs;
   RxString location = 'Goa, India'.obs;
-  RxString greeting = 'Good Morning 👋'.obs;
   
-  RxInt totalVehicles = 12.obs;
-  RxInt activeBookings = 8.obs;
-  RxInt todayEarnings = 12450.obs;
-  RxInt monthlyRevenue = 124000.obs;
-  RxInt weeklyEarnings = 68000.obs;
+  RxInt totalVehicles = 0.obs;
+  RxInt activeBookings = 0.obs;
+  RxInt todayEarnings = 0.obs;
+  RxInt monthlyRevenue = 0.obs;
+  RxInt weeklyEarnings = 0.obs;
 
   // Revenue chart data (Last 7 days)
   final List<double> revenueData = [
@@ -69,17 +70,47 @@ class DashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    updateGreeting();
+    loadUserProfile();
   }
 
-  void updateGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      greeting.value = 'Good Morning 👋';
-    } else if (hour < 17) {
-      greeting.value = 'Good Afternoon 👋';
+  Future<void> loadUserProfile() async {
+    final token = StorageService.getToken();
+    
+    if (token == null || token.isEmpty) {
+      vendorName.value = 'Guest';
+      return;
+    }
+
+    final result = await ApiService.getProfile(token);
+
+    if (result['success']) {
+      Map<String, dynamic> data = {};
+      
+      if (result['data']['data'] != null) {
+        data = result['data']['data'];
+      } else if (result['data']['owner'] != null) {
+        data = result['data']['owner'];
+      } else if (result['data']['user'] != null) {
+        data = result['data']['user'];
+      } else {
+        data = result['data'];
+      }
+      
+      vendorName.value = data['name']?.toString() ?? 'User';
+      
+      // Update location from address
+      if (data['address'] != null) {
+        final address = data['address'];
+        location.value = '${address['city'] ?? 'Goa'}, ${address['state'] ?? 'India'}';
+      }
+      
+      // Update stats if available
+      totalVehicles.value = data['totalVehicles'] ?? 0;
+      activeBookings.value = data['totalBookings'] ?? 0;
+      
+      print('✅ Dashboard profile loaded: ${vendorName.value}');
     } else {
-      greeting.value = 'Good Evening 👋';
+      vendorName.value = 'User';
     }
   }
 
@@ -113,7 +144,7 @@ class DashboardController extends GetxController {
   }
 
   void refreshDashboard() {
-    // Simulate data refresh
+    loadUserProfile();
     Get.snackbar(
       "Refreshed",
       "Dashboard data updated",

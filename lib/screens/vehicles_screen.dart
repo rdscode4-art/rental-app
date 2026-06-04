@@ -34,29 +34,33 @@ class VehiclesScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'My Vehicles',
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.whiteText,
+                    Obx(
+                      () => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'My Vehicles',
+                            style: GoogleFonts.poppins(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.whiteText,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${controller.vehicles.length} vehicles in fleet',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: AppTheme.greyText,
+                          const SizedBox(height: 4),
+                          Text(
+                            '${controller.vehicles.length} vehicles in fleet',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: AppTheme.greyText,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     GestureDetector(
-                      onTap: () => Get.to(() => const AddVehicleScreen()),
+                      onTap: () => Get.to(
+                        () => const AddVehicleScreen(),
+                      )?.then((_) => controller.refreshVehicles()),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -79,12 +83,15 @@ class VehiclesScreen extends StatelessWidget {
                 height: 50,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingLarge),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.paddingLarge,
+                  ),
                   itemCount: controller.filters.length,
                   itemBuilder: (context, index) {
                     final filter = controller.filters[index];
                     return Obx(() {
-                      final isSelected = controller.selectedFilter.value == filter;
+                      final isSelected =
+                          controller.selectedFilter.value == filter;
                       return Padding(
                         padding: const EdgeInsets.only(right: 12),
                         child: GestureDetector(
@@ -95,17 +102,25 @@ class VehiclesScreen extends StatelessWidget {
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              gradient: isSelected ? AppTheme.primaryGradient : null,
+                              gradient: isSelected
+                                  ? AppTheme.primaryGradient
+                                  : null,
                               color: isSelected ? null : AppTheme.cardColor,
                               borderRadius: BorderRadius.circular(25),
-                              boxShadow: isSelected ? AppTheme.glowShadow : null,
+                              boxShadow: isSelected
+                                  ? AppTheme.glowShadow
+                                  : null,
                             ),
                             child: Text(
                               filter,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? Colors.white : AppTheme.greyText,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.greyText,
                               ),
                             ),
                           ),
@@ -119,9 +134,52 @@ class VehiclesScreen extends StatelessWidget {
               // Vehicle List
               Expanded(
                 child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryPurple,
+                      ),
+                    );
+                  }
+
                   final vehicles = controller.filteredVehicles;
+
+                  if (vehicles.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.directions_car_rounded,
+                            size: 80,
+                            color: AppTheme.greyText.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No Vehicles Found',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.greyText,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add your first vehicle to get started',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: AppTheme.darkGreyText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingLarge),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.paddingLarge,
+                    ),
                     itemCount: vehicles.length,
                     itemBuilder: (context, index) {
                       final vehicle = vehicles[index];
@@ -132,7 +190,7 @@ class VehiclesScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Vehicle Image Placeholder
+                              // Vehicle Image
                               Container(
                                 height: 180,
                                 decoration: BoxDecoration(
@@ -147,17 +205,55 @@ class VehiclesScreen extends StatelessWidget {
                                     topRight: Radius.circular(20),
                                   ),
                                 ),
-                                child: Center(
-                                  child: Icon(
-                                    vehicle.type == 'Car'
-                                        ? Icons.directions_car_rounded
-                                        : vehicle.type == 'Bike'
-                                            ? Icons.two_wheeler_rounded
-                                            : Icons.moped_rounded,
-                                    size: 80,
-                                    color: Colors.white.withOpacity(0.5),
-                                  ),
-                                ),
+                                child: vehicle.imageUrl.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(20),
+                                          topRight: Radius.circular(20),
+                                        ),
+                                        child: Image.network(
+                                          vehicle.imageUrl,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Center(
+                                                  child: Icon(
+                                                    _getVehicleIcon(
+                                                      vehicle.type,
+                                                    ),
+                                                    size: 80,
+                                                    color: Colors.white
+                                                        .withOpacity(0.5),
+                                                  ),
+                                                );
+                                              },
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: Colors.white,
+                                                      ),
+                                                );
+                                              },
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Icon(
+                                          _getVehicleIcon(vehicle.type),
+                                          size: 80,
+                                          color: Colors.white.withOpacity(0.5),
+                                        ),
+                                      ),
                               ),
                               // Vehicle Details
                               Padding(
@@ -166,7 +262,8 @@ class VehiclesScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
                                           child: Text(
@@ -178,81 +275,99 @@ class VehiclesScreen extends StatelessWidget {
                                             ),
                                           ),
                                         ),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.star_rounded,
-                                              color: AppTheme.warningOrange,
-                                              size: 20,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: vehicle.isAvailable
+                                                ? AppTheme.successGreen
+                                                      .withOpacity(0.2)
+                                                : AppTheme.errorRed.withOpacity(
+                                                    0.2,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
                                             ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              vehicle.rating.toString(),
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppTheme.whiteText,
-                                              ),
+                                          ),
+                                          child: Text(
+                                            vehicle.isAvailable
+                                                ? 'Available'
+                                                : 'Unavailable',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: vehicle.isAvailable
+                                                  ? AppTheme.successGreen
+                                                  : AppTheme.errorRed,
                                             ),
-                                          ],
+                                          ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
-                                      vehicle.numberPlate,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        color: AppTheme.greyText,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
                                     Row(
                                       children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Per Hour',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 12,
-                                                  color: AppTheme.greyText,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '₹${vehicle.pricePerHour}',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppTheme.primaryPurple,
-                                                ),
-                                              ),
-                                            ],
+                                        Icon(
+                                          Icons.confirmation_number_outlined,
+                                          size: 16,
+                                          color: AppTheme.greyText,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          vehicle.numberPlate,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color: AppTheme.greyText,
                                           ),
                                         ),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Per Day',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 12,
-                                                  color: AppTheme.greyText,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '₹${vehicle.pricePerDay}',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppTheme.primaryBlue,
-                                                ),
-                                              ),
-                                            ],
+                                        const SizedBox(width: 16),
+                                        Icon(
+                                          Icons.category_outlined,
+                                          size: 16,
+                                          color: AppTheme.greyText,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          vehicle.type,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color: AppTheme.greyText,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.currency_rupee,
+                                          size: 16,
+                                          color: AppTheme.primaryGreen,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${vehicle.pricePerHour}/hr',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.primaryGreen,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Icon(
+                                          Icons.calendar_today_outlined,
+                                          size: 16,
+                                          color: AppTheme.primaryBlue,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${vehicle.pricePerDay}/day',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.primaryBlue,
                                           ),
                                         ),
                                       ],
@@ -280,8 +395,9 @@ class VehiclesScreen extends StatelessWidget {
         ),
         child: FloatingActionButton.extended(
           onPressed: () {
-            // Navigate to Add Vehicle Screen
-            Get.to(() => const AddVehicleScreen());
+            Get.to(
+              () => const AddVehicleScreen(),
+            )?.then((_) => controller.refreshVehicles());
           },
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -297,5 +413,23 @@ class VehiclesScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _getVehicleIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'car':
+      case 'sedan':
+        return Icons.directions_car_rounded;
+      case 'bike':
+        return Icons.two_wheeler_rounded;
+      case 'suv':
+        return Icons.airport_shuttle_rounded;
+      case 'ev':
+        return Icons.electric_car_rounded;
+      case 'auto':
+        return Icons.electric_rickshaw_rounded;
+      default:
+        return Icons.directions_car_rounded;
+    }
   }
 }

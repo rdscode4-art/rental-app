@@ -1,12 +1,26 @@
 import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 import '../models/vehicle_model.dart';
+import '../services/api_service.dart';
+import '../services/storage_service.dart';
+import '../utils/app_theme.dart';
 
 class VehicleController extends GetxController {
   RxList<Vehicle> vehicles = <Vehicle>[].obs;
   RxString selectedFilter = 'All'.obs;
   RxBool isLoading = false.obs;
 
-  final List<String> filters = ['All', 'Scooty', 'Bike', 'Car'];
+  final List<String> filters = [
+    'All',
+    'Bike',
+    'Car',
+    'SUV',
+    'Sedan',
+    'EV',
+    'Auto',
+    'HMV',
+    'Non-Vehicle',
+  ];
 
   @override
   void onInit() {
@@ -14,82 +28,142 @@ class VehicleController extends GetxController {
     loadVehicles();
   }
 
-  void loadVehicles() {
-    vehicles.value = [
-      Vehicle(
-        id: '1',
-        name: 'Honda Activa 6G',
-        type: 'Scooty',
-        numberPlate: 'GA 01 AB 1234',
-        pricePerHour: 149,
-        pricePerDay: 799,
-        rating: 4.8,
-        isAvailable: true,
-        imageUrl: 'https://via.placeholder.com/300x200/8B5CF6/FFFFFF?text=Honda+Activa',
-      ),
-      Vehicle(
-        id: '2',
-        name: 'Royal Enfield Classic 350',
-        type: 'Bike',
-        numberPlate: 'GA 02 CD 5678',
-        pricePerHour: 299,
-        pricePerDay: 1499,
-        rating: 4.9,
-        isAvailable: true,
-        imageUrl: 'https://via.placeholder.com/300x200/6366F1/FFFFFF?text=Royal+Enfield',
-      ),
-      Vehicle(
-        id: '3',
-        name: 'Hyundai Creta',
-        type: 'Car',
-        numberPlate: 'GA 03 EF 9012',
-        pricePerHour: 599,
-        pricePerDay: 2999,
-        rating: 4.7,
-        isAvailable: true,
-        imageUrl: 'https://via.placeholder.com/300x200/EC4899/FFFFFF?text=Hyundai+Creta',
-      ),
-      Vehicle(
-        id: '4',
-        name: 'TVS Jupiter',
-        type: 'Scooty',
-        numberPlate: 'GA 04 GH 3456',
-        pricePerHour: 139,
-        pricePerDay: 749,
-        rating: 4.6,
-        isAvailable: false,
-        imageUrl: 'https://via.placeholder.com/300x200/8B5CF6/FFFFFF?text=TVS+Jupiter',
-      ),
-      Vehicle(
-        id: '5',
-        name: 'KTM Duke 390',
-        type: 'Bike',
-        numberPlate: 'GA 05 IJ 7890',
-        pricePerHour: 399,
-        pricePerDay: 1999,
-        rating: 4.9,
-        isAvailable: true,
-        imageUrl: 'https://via.placeholder.com/300x200/6366F1/FFFFFF?text=KTM+Duke',
-      ),
-      Vehicle(
-        id: '6',
-        name: 'Maruti Swift',
-        type: 'Car',
-        numberPlate: 'GA 06 KL 2345',
-        pricePerHour: 499,
-        pricePerDay: 2499,
-        rating: 4.8,
-        isAvailable: true,
-        imageUrl: 'https://via.placeholder.com/300x200/EC4899/FFFFFF?text=Maruti+Swift',
-      ),
-    ];
+  Future<void> loadVehicles() async {
+    isLoading.value = true;
+
+    final token = StorageService.getToken();
+
+    if (token == null || token.isEmpty) {
+      isLoading.value = false;
+      Get.snackbar(
+        "Error",
+        "Please login again",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final result = await ApiService.getVehicles(token);
+
+    isLoading.value = false;
+
+    if (result['success']) {
+      final vehiclesData = _extractVehicles(result['data']);
+
+      print('✅ Found ${vehiclesData.length} vehicles');
+
+      // Convert to Vehicle objects
+      vehicles.value = vehiclesData.map((json) {
+        return Vehicle(
+          id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+          name: json['model']?.toString() ?? 'Unknown Vehicle',
+          type: _capitalizeFirst(json['type']?.toString() ?? 'Car'),
+          numberPlate: json['numberPlate']?.toString() ?? '',
+          pricePerHour: _parseInt(
+            json['pricing']?['hourlyRate'] ?? json['hourlyRate'],
+          ),
+          pricePerDay: _parseInt(
+            json['pricing']?['dailyRate'] ?? json['dailyRate'],
+          ),
+          rating: 0.0, // API doesn't have this field
+          isAvailable: json['isAvailable'] ?? json['available'] ?? true,
+          imageUrl: _getImageUrl(
+            json['images'] ?? json['image'] ?? json['imageUrl'],
+          ),
+        );
+      }).toList();
+
+      print('✅ Loaded ${vehicles.length} vehicles successfully');
+    } else {
+      Get.snackbar(
+        "Error",
+        result['data']['message'] ?? "Failed to load vehicles",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorRed,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  String _getImageUrl(dynamic images) {
+    if (images == null) return '';
+
+    String imagePath = '';
+
+    if (images is List && images.isNotEmpty) {
+      final firstImage = images[0];
+      if (firstImage is Map) {
+        imagePath =
+            firstImage['url']?.toString() ??
+            firstImage['path']?.toString() ??
+            firstImage['image']?.toString() ??
+            '';
+      } else {
+        imagePath = firstImage.toString();
+      }
+    } else if (images is Map) {
+      imagePath =
+          images['url']?.toString() ??
+          images['path']?.toString() ??
+          images['image']?.toString() ??
+          '';
+    } else if (images is String) {
+      imagePath = images;
+    }
+
+    // Convert relative path to full URL
+    if (imagePath.isNotEmpty && !imagePath.startsWith('http')) {
+      return 'https://backend.ridealmobility.com$imagePath';
+    }
+
+    return imagePath;
+  }
+
+  List<dynamic> _extractVehicles(dynamic data) {
+    if (data is List) return data;
+    if (data is! Map) return [];
+
+    final vehicles = data['vehicles'];
+    if (vehicles is List) return vehicles;
+
+    final nestedData = data['data'];
+    if (nestedData is List) return nestedData;
+    if (nestedData is Map && nestedData['vehicles'] is List) {
+      return nestedData['vehicles'] as List;
+    }
+
+    final result = data['result'];
+    if (result is List) return result;
+    if (result is Map && result['vehicles'] is List) {
+      return result['vehicles'] as List;
+    }
+
+    return [];
+  }
+
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString()) ?? 0;
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
   List<Vehicle> get filteredVehicles {
     if (selectedFilter.value == 'All') {
       return vehicles;
     }
-    return vehicles.where((v) => v.type == selectedFilter.value).toList();
+    return vehicles
+        .where(
+          (v) => v.type.toLowerCase() == selectedFilter.value.toLowerCase(),
+        )
+        .toList();
   }
 
   void changeFilter(String filter) {
@@ -116,6 +190,8 @@ class VehicleController extends GetxController {
         "Success",
         "Vehicle availability updated",
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.successGreen,
+        colorText: Colors.white,
       );
     }
   }
@@ -126,15 +202,12 @@ class VehicleController extends GetxController {
       "Success",
       "Vehicle deleted successfully",
       snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppTheme.successGreen,
+      colorText: Colors.white,
     );
   }
 
-  void addVehicle(Vehicle vehicle) {
-    vehicles.add(vehicle);
-    Get.snackbar(
-      "Success",
-      "Vehicle added successfully",
-      snackPosition: SnackPosition.BOTTOM,
-    );
+  Future<void> refreshVehicles() async {
+    await loadVehicles();
   }
 }

@@ -62,25 +62,63 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       // Profile Image
-                      Container(
+                      Obx(() => Container(
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: AppTheme.primaryGradient,
+                          gradient: controller.profilePhotoUrl.value.isEmpty 
+                              ? AppTheme.primaryGradient 
+                              : null,
+                          color: controller.profilePhotoUrl.value.isNotEmpty 
+                              ? Colors.transparent 
+                              : null,
                           boxShadow: AppTheme.glowShadow,
                         ),
-                        child: const Center(
-                          child: Text(
-                            'AM',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
+                        child: controller.profilePhotoUrl.value.isNotEmpty
+                            ? ClipOval(
+                                child: Image.network(
+                                  controller.profilePhotoUrl.value,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Center(
+                                      child: Text(
+                                        controller.vendorName.value.isNotEmpty 
+                                            ? controller.vendorName.value.substring(0, 2).toUpperCase()
+                                            : 'AM',
+                                        style: const TextStyle(
+                                          fontSize: 36,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              )
+                            : Center(
+                                child: Text(
+                                  controller.vendorName.value.isNotEmpty 
+                                      ? controller.vendorName.value.substring(0, 2).toUpperCase()
+                                      : 'AM',
+                                  style: const TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                      )),
                       const SizedBox(height: 16),
                       Text(
                         controller.vendorName.value,

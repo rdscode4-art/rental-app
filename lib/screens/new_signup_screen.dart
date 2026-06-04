@@ -9,17 +9,11 @@ import '../widgets/custom_text_field.dart';
 import '../controllers/new_signup_controller.dart';
 
 class NewSignupScreen extends StatelessWidget {
-  final String phoneNumber;
-  final String token;
-  
-  const NewSignupScreen({super.key, required this.phoneNumber, required this.token});
+  const NewSignupScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final NewSignupController controller = Get.put(NewSignupController(
-      phoneNumber: phoneNumber,
-      token: token,
-    ));
+    final NewSignupController controller = Get.put(NewSignupController());
 
     return Scaffold(
       body: Container(
