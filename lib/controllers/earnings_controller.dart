@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class EarningsController extends GetxController {
   RxInt walletBalance = 124000.obs;
@@ -21,11 +22,16 @@ class EarningsController extends GetxController {
 
   // Transaction history
   RxList<Transaction> transactions = <Transaction>[].obs;
+  late Razorpay _razorpay;
 
   @override
   void onInit() {
     super.onInit();
     loadTransactions();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
   }
 
   void loadTransactions() {
@@ -66,20 +72,27 @@ class EarningsController extends GetxController {
   }
 
   void withdrawMoney() {
-    Get.defaultDialog(
-      title: "Withdraw Money",
-      middleText: "Enter amount to withdraw",
-      textConfirm: "Withdraw",
-      textCancel: "Cancel",
-      onConfirm: () {
-        Get.back();
-        Get.snackbar(
-          "Success",
-          "Withdrawal request submitted",
-          snackPosition: SnackPosition.BOTTOM,
-        );
+    var options = {
+      'key': 'rzp_test_Sxqagd0yLCP5YI',
+      'amount': 10000, // in paise (₹100)
+      'name': 'My App',
+      'description': 'Wallet Withdrawal',
+      'prefill': {'contact': '9876543210', 'email': 'test@myapp.com'},
+      'external': {
+        'wallets': ['paytm'],
       },
-    );
+    };
+    _razorpay.open(options); 
+  }
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    Get.snackbar("Payment Success", "Payment ID: ${response.paymentId}");
+    // TODO: verify payment on backend
+  }
+   void _handleExternalWallet(ExternalWalletResponse response) {
+    Get.snackbar("External Wallet", "Wallet: ${response.walletName}");
+  }
+    void _handlePaymentError(PaymentFailureResponse response) {
+    Get.snackbar("Payment Failed", "${response.message}");
   }
 
   void refreshEarnings() {
@@ -89,7 +102,13 @@ class EarningsController extends GetxController {
       snackPosition: SnackPosition.BOTTOM,
     );
   }
+   @override
+  void onClose() {
+    _razorpay.clear();
+    super.onClose();
+  }
 }
+
 
 class Transaction {
   final String id;

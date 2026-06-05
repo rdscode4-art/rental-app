@@ -7,12 +7,13 @@ import '../services/api_service.dart';
 class DashboardController extends GetxController {
   RxString vendorName = 'Loading...'.obs;
   RxString location = 'Goa, India'.obs;
-  
+
   RxInt totalVehicles = 0.obs;
   RxInt activeBookings = 0.obs;
   RxInt todayEarnings = 0.obs;
   RxInt monthlyRevenue = 0.obs;
   RxInt weeklyEarnings = 0.obs;
+  RxBool isLoadingRequests = false.obs;
 
   // Revenue chart data (Last 7 days)
   final List<double> revenueData = [
@@ -27,55 +28,18 @@ class DashboardController extends GetxController {
 
   final List<String> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Recent Booking Requests
-  RxList<Map<String, dynamic>> recentBookings = <Map<String, dynamic>>[
-    {
-      'id': '1',
-      'customerName': 'Rahul Sharma',
-      'customerImage': '👨',
-      'vehicle': 'Hyundai Creta',
-      'pickup': 'Baga Beach',
-      'drop': 'Panjim',
-      'duration': '8 Hours',
-      'amount': 2499,
-      'date': 'Today, 2:30 PM',
-      'status': 'pending',
-    },
-    {
-      'id': '2',
-      'customerName': 'Priya Patel',
-      'customerImage': '👩',
-      'vehicle': 'Royal Enfield Classic',
-      'pickup': 'Calangute',
-      'drop': 'Anjuna',
-      'duration': '4 Hours',
-      'amount': 1199,
-      'date': 'Today, 3:15 PM',
-      'status': 'pending',
-    },
-    {
-      'id': '3',
-      'customerName': 'Amit Kumar',
-      'customerImage': '👨‍💼',
-      'vehicle': 'Honda Activa 6G',
-      'pickup': 'Candolim',
-      'drop': 'Mapusa',
-      'duration': '6 Hours',
-      'amount': 899,
-      'date': 'Today, 4:00 PM',
-      'status': 'pending',
-    },
-  ].obs;
+  RxList<Map<String, dynamic>> recentBookings = <Map<String, dynamic>>[].obs;
 
   @override
   void onInit() {
     super.onInit();
     loadUserProfile();
+    loadRecentBookingRequests();
   }
 
   Future<void> loadUserProfile() async {
     final token = StorageService.getToken();
-    
+
     if (token == null || token.isEmpty) {
       vendorName.value = 'Guest';
       return;
@@ -85,7 +49,7 @@ class DashboardController extends GetxController {
 
     if (result['success']) {
       Map<String, dynamic> data = {};
-      
+
       if (result['data']['data'] != null) {
         data = result['data']['data'];
       } else if (result['data']['owner'] != null) {
@@ -95,23 +59,133 @@ class DashboardController extends GetxController {
       } else {
         data = result['data'];
       }
-      
+
       vendorName.value = data['name']?.toString() ?? 'User';
-      
-      // Update location from address
+
       if (data['address'] != null) {
         final address = data['address'];
-        location.value = '${address['city'] ?? 'Goa'}, ${address['state'] ?? 'India'}';
+        location.value =
+            '${address['city'] ?? 'Goa'}, ${address['state'] ?? 'India'}';
       }
-      
-      // Update stats if available
+
       totalVehicles.value = data['totalVehicles'] ?? 0;
       activeBookings.value = data['totalBookings'] ?? 0;
-      
-      print('✅ Dashboard profile loaded: ${vendorName.value}');
     } else {
       vendorName.value = 'User';
     }
+  }
+
+  Future<void> loadRecentBookingRequests() async {
+    final token = StorageService.getToken();
+
+    if (token == null || token.isEmpty) {
+      recentBookings.clear();
+      return;
+    }
+
+    isLoadingRequests.value = true;
+
+    final result = await ApiService.getOwnerBookingRequests(token);
+
+    isLoadingRequests.value = false;
+
+    if (!result['success']) {
+      recentBookings.clear();
+      return;
+    }
+
+    final responseData = result['data'];
+    final bookingList = responseData['bookings'] is List
+        ? responseData['bookings'] as List
+        : <dynamic>[];
+    final bookings = bookingList
+        .whereType<Map>()
+        .map((booking) => Map<String, dynamic>.from(booking))
+        .where(
+          (booking) => booking['status']?.toString().toLowerCase() == 'pending',
+        )
+        .map(_bookingRequestToMap)
+        .take(3)
+        .toList();
+
+    recentBookings.value = bookings;
+  }
+
+  Map<String, dynamic> _bookingRequestToMap(Map<String, dynamic> booking) {
+    final vehicle = _asMap(booking['vehicleId']);
+    final rider = _asMap(booking['riderId']);
+    final customerName = rider['name']?.toString().trim();
+
+    return {
+      'id': booking['_id']?.toString() ?? booking['id']?.toString() ?? '',
+      'customerName': customerName?.isNotEmpty == true
+          ? customerName
+          : 'Customer',
+      'customerImage': _customerInitial(customerName),
+      'vehicle': vehicle['model']?.toString() ?? 'Vehicle',
+      'pickup': _formatBookingPeriod(booking),
+      'drop': '',
+      'duration': _formatDuration(booking),
+      'amount': _asInt(booking['estimatedFare']),
+      'date': _formatCreatedAt(booking['createdAt']?.toString()),
+      'status': booking['status']?.toString() ?? 'pending',
+    };
+  }
+
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return {};
+  }
+
+  int _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.round();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  String _customerInitial(String? name) {
+    final trimmedName = name?.trim() ?? '';
+    return trimmedName.isEmpty ? 'C' : trimmedName[0].toUpperCase();
+  }
+
+  String _formatDuration(Map<String, dynamic> booking) {
+    final bookingType = booking['bookingType']?.toString().toLowerCase();
+    final totalDays = booking['totalDays'];
+    final totalHours = booking['totalHours'];
+
+    if (bookingType == 'daily' && totalDays != null) {
+      return '$totalDays ${totalDays == 1 ? 'Day' : 'Days'}';
+    }
+
+    if (totalHours != null) {
+      return '$totalHours ${totalHours == 1 ? 'Hour' : 'Hours'}';
+    }
+
+    return bookingType == null || bookingType.isEmpty ? '' : bookingType;
+  }
+
+  String _formatBookingPeriod(Map<String, dynamic> booking) {
+    final startDate = DateTime.tryParse(booking['startDate']?.toString() ?? '');
+    final endDate = DateTime.tryParse(booking['endDate']?.toString() ?? '');
+
+    if (startDate == null) return 'Pickup date not available';
+    if (endDate == null) return 'Starts ${_formatDate(startDate)}';
+
+    return '${_formatDate(startDate)} - ${_formatDate(endDate)}';
+  }
+
+  String _formatCreatedAt(String? value) {
+    final date = DateTime.tryParse(value ?? '');
+    if (date == null) return '';
+    return _formatDate(date);
+  }
+
+  String _formatDate(DateTime date) {
+    final localDate = date.toLocal();
+    return '${localDate.day.toString().padLeft(2, '0')}/'
+        '${localDate.month.toString().padLeft(2, '0')}/'
+        '${localDate.year}';
   }
 
   void acceptBooking(String bookingId) {
@@ -145,6 +219,7 @@ class DashboardController extends GetxController {
 
   void refreshDashboard() {
     loadUserProfile();
+    loadRecentBookingRequests();
     Get.snackbar(
       "Refreshed",
       "Dashboard data updated",

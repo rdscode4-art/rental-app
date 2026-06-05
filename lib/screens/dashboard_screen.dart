@@ -22,7 +22,7 @@ class DashboardScreen extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               AppTheme.backgroundColor,
-              AppTheme.primaryGreen.withOpacity(0.05),
+              AppTheme.primaryGreen.withValues(alpha: 0.05),
             ],
           ),
         ),
@@ -36,37 +36,39 @@ class DashboardScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Obx(() => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          controller.vendorName.value,
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.whiteText,
+                    Obx(
+                      () => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            controller.vendorName.value,
+                            style: GoogleFonts.poppins(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.whiteText,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: AppTheme.primaryGreen,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              controller.location.value,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: AppTheme.greyText,
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: AppTheme.primaryGreen,
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    )),
+                              const SizedBox(width: 4),
+                              Text(
+                                controller.location.value,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: AppTheme.greyText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -83,35 +85,37 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Earnings Banner
                 _buildEarningsBanner(controller),
                 const SizedBox(height: 24),
-                
+
                 // Stats Cards
-                Obx(() => Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Total Vehicles',
-                        controller.totalVehicles.value.toString(),
-                        Icons.directions_car_rounded,
-                        AppTheme.primaryGreen,
+                Obx(
+                  () => Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          'Total Vehicles',
+                          controller.totalVehicles.value.toString(),
+                          Icons.directions_car_rounded,
+                          AppTheme.primaryGreen,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Active Bookings',
-                        controller.activeBookings.value.toString(),
-                        Icons.calendar_today_rounded,
-                        AppTheme.primaryOrange,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatCard(
+                          'Active Bookings',
+                          controller.activeBookings.value.toString(),
+                          Icons.calendar_today_rounded,
+                          AppTheme.primaryOrange,
+                        ),
                       ),
-                    ),
-                  ],
-                )),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24),
-                
+
                 // Recent Booking Requests
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -141,9 +145,22 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Booking Requests List
                 Obx(() {
+                  if (controller.isLoadingRequests.value) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
                   if (controller.recentBookings.isEmpty) {
                     return _buildEmptyState();
                   }
@@ -153,7 +170,7 @@ class DashboardScreen extends StatelessWidget {
                     }).toList(),
                   );
                 }),
-                
+
                 const SizedBox(height: 24),
                 // Quick Actions
                 Text(
@@ -205,86 +222,98 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildEarningsBanner(DashboardController controller) {
-    return Obx(() => Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryGreen,
-            AppTheme.primaryGreen.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGreen.withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
+    return Obx(
+      () => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primaryGreen,
+              AppTheme.primaryGreen.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Today\'s Earnings',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Today\'s Earnings',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '₹${controller.todayEarnings.value}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '₹${controller.todayEarnings.value}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  child: const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildEarningsStat(
+                    'This Week',
+                    '₹${controller.weeklyEarnings.value}',
+                  ),
+                  Container(
+                    width: 1,
+                    height: 30,
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                  _buildEarningsStat(
+                    'This Month',
+                    '₹${controller.monthlyRevenue.value}',
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildEarningsStat('This Week', '₹${controller.weeklyEarnings.value}'),
-                Container(width: 1, height: 30, color: Colors.white.withOpacity(0.3)),
-                _buildEarningsStat('This Month', '₹${controller.monthlyRevenue.value}'),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _buildEarningsStat(String label, String value) {
@@ -294,7 +323,7 @@ class DashboardScreen extends StatelessWidget {
           label,
           style: GoogleFonts.poppins(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 4),
@@ -310,7 +339,10 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBookingRequestCard(DashboardController controller, Map<String, dynamic> booking) {
+  Widget _buildBookingRequestCard(
+    DashboardController controller,
+    Map<String, dynamic> booking,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: GlassCard(
@@ -324,7 +356,7 @@ class DashboardScreen extends StatelessWidget {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withOpacity(0.2),
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -359,9 +391,12 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryOrange.withOpacity(0.2),
+                    color: AppTheme.primaryOrange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -379,14 +414,18 @@ class DashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor.withOpacity(0.5),
+                color: AppTheme.surfaceColor.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.directions_car, size: 16, color: AppTheme.greyText),
+                      const Icon(
+                        Icons.directions_car,
+                        size: 16,
+                        color: AppTheme.greyText,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         booking['vehicle'],
@@ -396,7 +435,11 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.access_time, size: 16, color: AppTheme.greyText),
+                      const Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: AppTheme.greyText,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         booking['duration'],
@@ -410,11 +453,17 @@ class DashboardScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: AppTheme.primaryGreen),
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: AppTheme.primaryGreen,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${booking['pickup']} → ${booking['drop']}',
+                          booking['drop']?.toString().isNotEmpty == true
+                              ? '${booking['pickup']} → ${booking['drop']}'
+                              : booking['pickup'],
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: AppTheme.greyText,
@@ -457,7 +506,10 @@ class DashboardScreen extends StatelessWidget {
                     onPressed: () => controller.rejectBooking(booking['id']),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.errorRed,
-                      side: const BorderSide(color: AppTheme.errorRed, width: 1.5),
+                      side: const BorderSide(
+                        color: AppTheme.errorRed,
+                        width: 1.5,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -488,7 +540,7 @@ class DashboardScreen extends StatelessWidget {
           Icon(
             Icons.inbox_outlined,
             size: 64,
-            color: AppTheme.greyText.withOpacity(0.5),
+            color: AppTheme.greyText.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -534,10 +586,7 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: AppTheme.greyText,
-            ),
+            style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.greyText),
           ),
           const SizedBox(height: 4),
           Text(

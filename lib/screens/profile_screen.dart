@@ -58,162 +58,179 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 // Profile Card
-                Obx(() => GlassCard(
-                  child: Column(
-                    children: [
-                      // Profile Image
-                      Obx(() => Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: controller.profilePhotoUrl.value.isEmpty 
-                              ? AppTheme.primaryGradient 
-                              : null,
-                          color: controller.profilePhotoUrl.value.isNotEmpty 
-                              ? Colors.transparent 
-                              : null,
-                          boxShadow: AppTheme.glowShadow,
-                        ),
-                        child: controller.profilePhotoUrl.value.isNotEmpty
-                            ? ClipOval(
-                                child: Image.network(
-                                  controller.profilePhotoUrl.value,
-                                  fit: BoxFit.cover,
-                                  width: 100,
-                                  height: 100,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(
-                                      child: Text(
-                                        controller.vendorName.value.isNotEmpty 
-                                            ? controller.vendorName.value.substring(0, 2).toUpperCase()
-                                            : 'AM',
-                                        style: const TextStyle(
-                                          fontSize: 36,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const Center(
-                                      child: CircularProgressIndicator(
+                Obx(
+                  () => GlassCard(
+                    child: Column(
+                      children: [
+                        // Profile Image
+                        Obx(
+                          () => Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: controller.profilePhotoUrl.value.isEmpty
+                                  ? AppTheme.primaryGradient
+                                  : null,
+                              color: controller.profilePhotoUrl.value.isNotEmpty
+                                  ? Colors.transparent
+                                  : null,
+                              boxShadow: AppTheme.glowShadow,
+                            ),
+                            child: controller.profilePhotoUrl.value.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      controller.profilePhotoUrl.value,
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Center(
+                                              child: Text(
+                                                controller
+                                                        .vendorName
+                                                        .value
+                                                        .isNotEmpty
+                                                    ? controller
+                                                          .vendorName
+                                                          .value
+                                                          .substring(0, 2)
+                                                          .toUpperCase()
+                                                    : 'AM',
+                                                style: const TextStyle(
+                                                  fontSize: 36,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                            if (loadingProgress == null) {
+                                              return child;
+                                            }
+                                            return const Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                              ),
+                                            );
+                                          },
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      controller.vendorName.value.isNotEmpty
+                                          ? controller.vendorName.value
+                                                .substring(0, 2)
+                                                .toUpperCase()
+                                          : 'AM',
+                                      style: const TextStyle(
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
-                                    );
-                                  },
-                                ),
-                              )
-                            : Center(
-                                child: Text(
-                                  controller.vendorName.value.isNotEmpty 
-                                      ? controller.vendorName.value.substring(0, 2).toUpperCase()
-                                      : 'AM',
-                                  style: const TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    ),
                                   ),
-                                ),
-                              ),
-                      )),
-                      const SizedBox(height: 16),
-                      Text(
-                        controller.vendorName.value,
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.whiteText,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        controller.agencyName.value,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          color: AppTheme.greyText,
+                        const SizedBox(height: 16),
+                        Text(
+                          controller.vendorName.value,
+                          style: GoogleFonts.poppins(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.whiteText,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                        const SizedBox(height: 4),
+                        Text(
+                          controller.agencyName.value,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: AppTheme.greyText,
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.primaryGradient,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.verified_user_rounded,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Verified Vendor',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.verified_user_rounded,
+                                size: 16,
                                 color: Colors.white,
                               ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Verified Vendor',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Stats
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(
+                              controller.totalVehicles.value.toString(),
+                              'Vehicles',
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: AppTheme.greyText.withOpacity(0.3),
+                            ),
+                            _buildStatItem(
+                              controller.totalBookings.value.toString(),
+                              'Bookings',
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: AppTheme.greyText.withOpacity(0.3),
+                            ),
+                            _buildStatItem(
+                              controller.rating.value.toString(),
+                              'Rating',
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Stats
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatItem(
-                            controller.totalVehicles.value.toString(),
-                            'Vehicles',
-                          ),
-                          Container(
-                            width: 1,
-                            height: 40,
-                            color: AppTheme.greyText.withOpacity(0.3),
-                          ),
-                          _buildStatItem(
-                            controller.totalBookings.value.toString(),
-                            'Bookings',
-                          ),
-                          Container(
-                            width: 1,
-                            height: 40,
-                            color: AppTheme.greyText.withOpacity(0.3),
-                          ),
-                          _buildStatItem(
-                            controller.rating.value.toString(),
-                            'Rating',
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                )),
-                const SizedBox(height: 24),
+                ),
+                // const SizedBox(height: 24),
                 // Menu Options
-                _buildMenuOption(
-                  Icons.edit_rounded,
-                  'Edit Profile',
-                  'Update your personal information',
-                  controller.editProfile,
-                ),
-                const SizedBox(height: 12),
-                _buildMenuOption(
-                  Icons.description_outlined,
-                  'Documents',
-                  'Manage your documents',
-                  controller.viewDocuments,
-                ),
-                const SizedBox(height: 12),
+                // _buildMenuOption(
+                //   Icons.edit_rounded,
+                //   'Edit Profile',
+                //   'Update your personal information',
+                //   controller.editProfile,
+                // ),
+                // const SizedBox(height: 12),
+                // _buildMenuOption(
+                //   Icons.description_outlined,
+                //   'Documents',
+                //   'Manage your documents',
+                //   controller.viewDocuments,
+                // ),
+                //  const SizedBox(height: 12),
                 // _buildMenuOption(
                 //   Icons.notifications_outlined,
                 //   'Notifications',
@@ -226,6 +243,13 @@ class ProfileScreen extends StatelessWidget {
                   'Help & Support',
                   'Get help and contact support',
                   controller.helpSupport,
+                ),
+                const SizedBox(height: 12),
+                _buildMenuOption(
+                  Icons.feedback_outlined,
+                  'Feedback',
+                  'Share suggestions or report an issue',
+                  controller.feedback,
                 ),
                 const SizedBox(height: 12),
                 _buildMenuOption(
@@ -321,10 +345,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: AppTheme.greyText,
-          ),
+          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.greyText),
         ),
       ],
     );

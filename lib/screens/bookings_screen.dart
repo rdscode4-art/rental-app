@@ -25,7 +25,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             end: Alignment.bottomRight,
             colors: [
               AppTheme.backgroundColor,
-              AppTheme.primaryPurple.withOpacity(0.05),
+              AppTheme.primaryPurple.withValues(alpha: 0.05),
             ],
           ),
         ),
@@ -58,6 +58,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                    IconButton(
+                      onPressed: controller.loadBookings,
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        color: AppTheme.whiteText,
+                      ),
                     ),
                   ],
                 ),
@@ -118,6 +125,14 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   Widget _buildBookingList(BookingController controller) {
+    if (controller.isLoading.value) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+        ),
+      );
+    }
+
     List bookings;
     switch (controller.currentTabIndex.value) {
       case 0:
@@ -144,7 +159,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             Container(
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
-                color: AppTheme.primaryPurple.withOpacity(0.1),
+                color: AppTheme.primaryPurple.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

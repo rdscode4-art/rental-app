@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
@@ -12,10 +13,18 @@ class ApiService {
   static const String verifyOtpEndpoint = '/owner/verify-otp';
   static const String completeProfileEndpoint = '/owner/complete-profile';
   static const String loginEndpoint = '/owner/login';
+  static const String forgotPasswordSendOtpEndpoint =
+      '/owner/forgot-password/send-otp';
+  static const String forgotPasswordVerifyOtpEndpoint =
+      '/owner/forgot-password/verify-otp';
+  static const String forgotPasswordResetEndpoint =
+      '/owner/forgot-password/reset';
   // Add Vehicle API
   static const String addVehicleEndpoint = '/owner/vehicle/add';
   static const String getVehiclesEndpoint = '/owner/vehicles';
   static const String profileEndpoint = '/owner/profile';
+  static const String ownerBookingRequestsEndpoint =
+      '/api/vehicle-bookings/owner/requests';
 
   // Common headers
   static Map<String, String> get headers => {
@@ -26,6 +35,14 @@ class ApiService {
     'Authorization': 'Bearer $token',
   };
 
+  static Map<String, dynamic> _decodeResponse(http.Response response) {
+    try {
+      return json.decode(response.body);
+    } catch (_) {
+      return {'message': 'Invalid response format', 'raw': response.body};
+    }
+  }
+
   // Login API
   static Future<Map<String, dynamic>> login(
     String email,
@@ -33,6 +50,7 @@ class ApiService {
   ) async {
     try {
       final url = Uri.parse('$baseUrl$loginEndpoint');
+      final fcmToken = await FirebaseMessaging.instance.getToken();
 
       print('═══════════════════════════════════');
       print('📤 LOGIN REQUEST');
@@ -40,11 +58,16 @@ class ApiService {
       print('🌐 URL: $url');
       print('📧 Email: $email');
       print('🔒 Password: ${password.substring(0, 3)}***');
+      print('📱 FCM Token: $fcmToken');
 
       final response = await http.post(
         url,
         headers: headers,
-        body: json.encode({'email': email, 'password': password}),
+        body: json.encode({
+          'email': email,
+          'password': password,
+          'fcmToken': fcmToken,
+        }),
       );
 
       print('═══════════════════════════════════');
@@ -177,6 +200,96 @@ class ApiService {
       };
     } catch (e) {
       print('❌ Error in verifyOtp: $e');
+      return {
+        'success': false,
+        'statusCode': 0,
+        'data': {'message': 'Network error. Please check your connection.'},
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Forgot Password - Send OTP API
+  static Future<Map<String, dynamic>> sendForgotPasswordOtp(
+    String phone,
+  ) async {
+    try {
+      final url = Uri.parse('$baseUrl$forgotPasswordSendOtpEndpoint');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: json.encode({'phone': phone}),
+      );
+
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201,
+        'statusCode': response.statusCode,
+        'data': _decodeResponse(response),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'statusCode': 0,
+        'data': {'message': 'Network error. Please check your connection.'},
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Forgot Password - Verify OTP API
+  static Future<Map<String, dynamic>> verifyForgotPasswordOtp(
+    String phone,
+    String otp,
+  ) async {
+    try {
+      final url = Uri.parse('$baseUrl$forgotPasswordVerifyOtpEndpoint');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: json.encode({'phone': phone, 'otp': otp}),
+      );
+
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201,
+        'statusCode': response.statusCode,
+        'data': _decodeResponse(response),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'statusCode': 0,
+        'data': {'message': 'Network error. Please check your connection.'},
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Forgot Password - Reset Password API
+  static Future<Map<String, dynamic>> resetForgotPassword({
+    required String resetToken,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl$forgotPasswordResetEndpoint');
+
+      final response = await http.post(
+        url,
+        headers: {...headers, ...headersWithAuth(resetToken)},
+        body: json.encode({
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        }),
+      );
+
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201,
+        'statusCode': response.statusCode,
+        'data': _decodeResponse(response),
+      };
+    } catch (e) {
       return {
         'success': false,
         'statusCode': 0,
@@ -430,6 +543,30 @@ class ApiService {
       };
     } catch (e) {
       print('❌ Error in getVehicles: $e');
+      return {
+        'success': false,
+        'statusCode': 0,
+        'data': {'message': 'Network error. Please check your connection.'},
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Get Owner Booking Requests API
+  static Future<Map<String, dynamic>> getOwnerBookingRequests(
+    String token,
+  ) async {
+    try {
+      final url = Uri.parse('$baseUrl$ownerBookingRequestsEndpoint');
+
+      final response = await http.get(url, headers: headersWithAuth(token));
+
+      return {
+        'success': response.statusCode == 200,
+        'statusCode': response.statusCode,
+        'data': _decodeResponse(response),
+      };
+    } catch (e) {
       return {
         'success': false,
         'statusCode': 0,

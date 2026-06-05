@@ -1,8 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:rentalvender/screens/edit_profile_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/documents_screen.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../utils/app_theme.dart';
@@ -10,7 +8,7 @@ import '../utils/app_theme.dart';
 class ProfileController extends GetxController {
   RxBool isLoading = false.obs;
   Rx<Map<String, dynamic>> profileData = Rx<Map<String, dynamic>>({});
-  
+
   // Observable variables with defaults
   RxString vendorName = 'Loading...'.obs;
   RxString agencyName = ''.obs;
@@ -34,7 +32,7 @@ class ProfileController extends GetxController {
     isLoading.value = true;
 
     final token = StorageService.getToken();
-    
+
     if (token == null || token.isEmpty) {
       isLoading.value = false;
       vendorName.value = 'Guest';
@@ -55,7 +53,7 @@ class ProfileController extends GetxController {
     if (result['success']) {
       // Extract profile data
       Map<String, dynamic> data = {};
-      
+
       if (result['data']['data'] != null) {
         data = result['data']['data'];
       } else if (result['data']['owner'] != null) {
@@ -65,46 +63,49 @@ class ProfileController extends GetxController {
       } else {
         data = result['data'];
       }
-      
+
       profileData.value = data;
-      
+
       // Update observable variables
       vendorName.value = data['name']?.toString() ?? 'User';
       agencyName.value = data['agencyName']?.toString() ?? '';
       mobile.value = data['phone']?.toString() ?? '';
       email.value = data['email']?.toString() ?? '';
-      
+
       // Check multiple possible field names for profile photo
-      String photoPath = data['profilePhoto']?.toString() ?? 
-                         data['profilePicture']?.toString() ?? 
-                         data['avatar']?.toString() ?? 
-                         data['photo']?.toString() ?? 
-                         data['image']?.toString() ?? '';
-      
+      String photoPath =
+          data['profilePhoto']?.toString() ??
+          data['profilePicture']?.toString() ??
+          data['avatar']?.toString() ??
+          data['photo']?.toString() ??
+          data['image']?.toString() ??
+          '';
+
       // Convert relative path to full URL
       if (photoPath.isNotEmpty && !photoPath.startsWith('http')) {
         profilePhotoUrl.value = 'https://backend.ridealmobility.com$photoPath';
       } else {
         profilePhotoUrl.value = photoPath;
       }
-      
+
       print('📸 Profile Photo URL: ${profilePhotoUrl.value}');
       print('📸 Is URL Empty: ${profilePhotoUrl.value.isEmpty}');
-      
+
       // Address
       if (data['address'] != null) {
         final address = data['address'];
-        city.value = '${address['city'] ?? ''}, ${address['state'] ?? ''}'.trim();
+        city.value = '${address['city'] ?? ''}, ${address['state'] ?? ''}'
+            .trim();
       }
-      
+
       // Stats
       totalVehicles.value = data['totalVehicles'] ?? 0;
       totalBookings.value = data['totalBookings'] ?? 0;
       rating.value = (data['rating'] ?? 0.0).toDouble();
-      
+
       // Save to storage
       StorageService.saveUserData(data);
-      
+
       print('✅ Profile loaded successfully');
       print('Profile Data: $data');
     } else {
@@ -119,13 +120,13 @@ class ProfileController extends GetxController {
     }
   }
 
-  void editProfile() {
-    Get.to(() => EditProfileScreen());
-  }
+  // void editProfile() {
+  //   Get.to(() => EditProfileScreen());
+  // }
 
-  void viewDocuments() {
-    Get.to(() => const DocumentsScreen());
-  }
+  // void viewDocuments() {
+  //   Get.to(() => const DocumentsScreen());
+  // }
 
   // void manageNotifications() {
   //   Get.snackbar(
@@ -148,6 +149,16 @@ class ProfileController extends GetxController {
       title: "Help & Support",
       middleText:
           "For assistance, contact us:\n\n📧 support@rideal.com\n📞 +91 98765 43210",
+      textConfirm: "OK",
+      onConfirm: () => Get.back(),
+    );
+  }
+
+  void feedback() {
+    Get.defaultDialog(
+      title: "Feedback",
+      middleText:
+          "Share your suggestions or issues with us:\n\nEmail: feedback@rideal.com\nPhone: +91 98765 43210",
       textConfirm: "OK",
       onConfirm: () => Get.back(),
     );
@@ -179,7 +190,7 @@ class ProfileController extends GetxController {
   void logout() {
     // Clear storage
     StorageService.clearAll();
-    
+
     Get.offAll(() => const LoginScreen());
     Get.snackbar(
       "Success",

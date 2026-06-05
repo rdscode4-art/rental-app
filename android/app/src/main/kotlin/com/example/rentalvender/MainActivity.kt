@@ -1,4 +1,4 @@
-package  com.ridealmobility.rentalvendor
+package  com.rds.ridealRental
 
 import io.flutter.embedding.android.FlutterActivity
 
